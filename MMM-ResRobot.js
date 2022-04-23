@@ -22,6 +22,7 @@ Module.register("MMM-ResRobot",{
 			{from: "740020749", to: ""},	// Each route has a starting station ID from ResRobot, default: Stockholm Central Station (Metro)
 		],					// and a destination station ID from ResRobot, default: none
 		skipMinutes: 0,		// Skip entries that depart with the next <value> minutes
+		timeWindow: 120,	// Time interval in minutes that will be returned from ResRobot, max 1439
 		maximumEntries: 6,	// Maximum number of departures to display
 		truncateAfter: 5,	// A value > 0 will truncate direction name at first space after <value> characters. 0 = no truncation
 		truncateLineAfter: 5,	// A value > 0 will truncate the line number after <value> characters. 0 = no truncation
@@ -99,7 +100,7 @@ Module.register("MMM-ResRobot",{
 		}
 
 		if (!this.loaded) {
-			wrapper.innerHTML = "Fetching departures ...";
+			wrapper.innerHTML = this.translate("FETCHING_DEPARTURES");
 			wrapper.className = "dimmed light small";
 			return wrapper;
 		}
@@ -180,7 +181,8 @@ Module.register("MMM-ResRobot",{
 		}
 		if (n === 0) {
 			// No departures found so resend config
-			this.initConfig();
+			//this.initConfig();
+			wrapper.innerHTML = this.translate("NO_DEPARTURES");
 		}
 		return table;
 	},

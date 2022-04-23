@@ -1,4 +1,6 @@
 {
 	"NOW": "Nu",
-	"MINUTES_SHORT": "min"
+	"MINUTES_SHORT": "min",
+	"FETCHING_DEPARTURES": "Hämtar avgångar ...",
+	"NO_DEPARTURES": "Inga avgångar ..."
 }

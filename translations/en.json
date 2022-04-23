@@ -1,4 +1,6 @@
 {
 	"NOW": "Now",
-	"MINUTES_SHORT": "min"
+	"MINUTES_SHORT": "min",
+	"FETCHING_DEPARTURES": "Fetching departures ...",
+	"NO_DEPARTURES": "No departures ..."
 }
