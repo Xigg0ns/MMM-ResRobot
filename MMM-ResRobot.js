@@ -16,7 +16,7 @@ Module.register("MMM-ResRobot",{
 		animationSpeed: 2000,
 		fade: true,
 		fadePoint: 0.25,	// Start on 1/4th of the list.
-		apiBase: "https://api.resrobot.se/v2/departureBoard?format=json&passlist=0",
+		apiBase: "https://api.resrobot.se/v2.1/departureBoard?format=json&passlist=0",
 		apiKey: "<YOUR RESROBOT API KEY HERE>",
 		routes: [
 			{from: "740020749", to: ""},	// Each route has a starting station ID from ResRobot, default: Stockholm Central Station (Metro)
@@ -54,13 +54,13 @@ Module.register("MMM-ResRobot",{
 		return ["moment.js"];
 	},
 
-        // Define required translations.
-        getTranslations: function() {
-                return {
-                        en: "translations/en.json",
-                        sv: "translations/sv.json",
-                };
-        },
+    // Define required translations.
+    getTranslations: function() {
+		return {
+			en: "translations/en.json",
+			sv: "translations/sv.json"
+		};
+	},
 
 	// Define start sequence.
 	start: function() {

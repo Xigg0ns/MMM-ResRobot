@@ -99,6 +99,7 @@ module.exports = NodeHelper.create({
 			// Output departures and schedule update
 			this.sendDepartures();
 		} else {
+			Log.info(this.name + " : Fetching departures");
 			var getRouteDepartures = getRoutes.map( (r) => {
 				return (async () => {
 					const response = await fetch(r.url);
@@ -112,6 +113,8 @@ module.exports = NodeHelper.create({
 			Promise.all(getRouteDepartures)
 			.then( () => {
 				self.sendDepartures();
+			}).catch((err) => {
+				Log.error(this.name + " - " + err);
 			});
 		}
 	},
@@ -128,9 +131,9 @@ module.exports = NodeHelper.create({
 			var departure = data.Departure[i];
 			var departureTime = moment(departure.date + "T" + departure.time);
 			var waitingTime = departureTime.diff(now, "minutes");
-			var departureTransportNumber = departure.transportNumber;
+			var departureTransportNumber = departure.ProductAtStop.displayNumber;
 			var departureTo = departure.direction;
-			var departureType = departure.Product.catOutS;
+			var departureType = departure.ProductAtStop.catOutS;
 			// If truncation is requested, truncate ending station at first word break after n characters
 			if (this.config.truncateAfter > 0) {
 				if (departureTo.indexOf(" ",this.config.truncateAfter) > 0)  {
@@ -141,7 +144,7 @@ module.exports = NodeHelper.create({
 			if (this.config.truncateLineAfter > 0) {
 				departureTransportNumber = departureTransportNumber.substring(0, this.config.truncateLineAfter);
 			}
-			// Save dparture (if it is after now + skipMinutes)
+			// Save departure (if it is after now + skipMinutes)
 			if (departureTime.isSameOrAfter(now.clone().add(moment.duration(config.skipMinutes, 'minutes')))) {
 				this.departures.push({
 					routeId: routeId,				// Id for route, used for sorting
@@ -183,7 +186,7 @@ module.exports = NodeHelper.create({
 	 */
 	createURL: function(params) {
 		var url = this.config.apiBase;
-		url +="&key=" + encodeURIComponent(this.config.apiKey);
+		url +="&accessId=" + encodeURIComponent(this.config.apiKey);
 		if (this.config.maximumEntries !== "") {
 			url += "&maxJourneys=" + encodeURIComponent(this.config.maximumEntries);
 		}
