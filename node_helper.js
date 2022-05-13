@@ -24,12 +24,19 @@ module.exports = NodeHelper.create({
 
 	// Receive notification
 	socketNotificationReceived: function(notification, payload) {
-   		Log.info("node_helper for " + this.name + " received a socket notification: " + notification + " - Payload: " + JSON.stringify(payload, null, 2));
+   		//Log.info("node_helper for " + this.name + " received a socket notification: " + notification + " - Payload: " + JSON.stringify(payload, null, 2));
+		Log.info("node_helper for " + this.name + " received a socket notification: " + notification);
 		if (notification === "CONFIG" && this.started == false) {
+			//
+			this.sendSocketNotification("CONFIG_RECV");
 			this.config = payload;
 			this.started = true;
 			this.departures = [];
 			this.updateDepartures();
+		}
+		//Sometimes socketNotification to main module don't start, this is try to workaround it.
+		if (notification === "FORCE_UPDATE") {
+			this.sendSocketNotification("DEPARTURES", this.departures);
 		}
 	},
 
@@ -40,6 +47,8 @@ module.exports = NodeHelper.create({
 		var self = this;
 		var now = moment();
 		var cutoff = now.clone().add(moment.duration(this.config.skipMinutes, "minutes"));
+		var thisDay = now.format("YYYY-MM-DD");
+		var nextDay = (now.clone().add(moment.duration(this.config.timeWindow, "minutes"))).format("YYYY-MM-DD");
 
 		// Sort current departures by routeId and departure time (descending)
 		this.departures.sort(function(a, b) {
@@ -84,7 +93,13 @@ module.exports = NodeHelper.create({
 					params["direction"] = this.config.routes[routeId].to;
 				}
 				var url = this.createURL(params);
-				getRoutes.push({"routeId": routeId, "url": url});
+				var url2 = 0;
+				if (thisDay != nextDay) {
+					params["date"] = nextDay;
+					params["time"] = "00:00";
+					url2 = this.createURL(params);
+				}
+				getRoutes.push({"routeId": routeId, "url": url, "url2": url2});
 			} else {
 				for (d in departures[routeId]) {
 					// Recalculate waitingTime
@@ -97,13 +112,18 @@ module.exports = NodeHelper.create({
 		// Array getRoutes contains id and url for each route that we need to retrieve departures for
 		if (getRoutes.length == 0) {
 			// Output departures and schedule update
-			this.sendDepartures();
+			self.sendDepartures();
 		} else {
-			Log.info(this.name + " : Fetching departures");
 			var getRouteDepartures = getRoutes.map( (r) => {
 				return (async () => {
-					const response = await fetch(r.url);
-					const json = await response.json();
+					response = await fetch(r.url);
+					json1 = await response.json();
+					json = json1;
+					if (r.url2 != 0) {
+						response2 = await fetch(r.url2);
+						json2 = await response2.json();
+						json = JSON.parse((JSON.stringify(json1) + JSON.stringify(json2)).replace(/}{/g,","));
+					}
 					json.routeId = r.routeId;
 					self.saveDepartures(json);
 					return json;
@@ -172,9 +192,10 @@ module.exports = NodeHelper.create({
 				if (a.timestamp > b.timestamp) return 1;
 				return 0;
  			});
-			this.sendSocketNotification("DEPARTURES", this.departures);
 		}
-		this.scheduleUpdate();
+		this.sendSocketNotification("DEPARTURES", this.departures);
+		this.scheduleUpdate(0);
+		Log.info(this.name + " : broadcasted " + this.departures.length + " departures");
 	},
 
 	/* createURL()
@@ -205,10 +226,9 @@ module.exports = NodeHelper.create({
 	scheduleUpdate: function(delay) {
 		var self = this;
 		var nextLoad = this.config.updateInterval;
-		if (typeof delay !== "undefined" && delay >= 0) {
+		if (typeof delay !== "undefined" && delay > 0) {
 			nextLoad = delay;
 		}
-
 		clearTimeout(this.updateTimer);
 		this.updateTimer = setTimeout(function() {
 			self.updateDepartures();

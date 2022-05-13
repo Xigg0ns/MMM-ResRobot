@@ -2,5 +2,6 @@
 	"NOW": "Nu",
 	"MINUTES_SHORT": "min",
 	"FETCHING_DEPARTURES": "Hämtar avgångar ...",
+	"NO_ROUTE": "Konfigurera minst en rutt i config.js ...",
 	"NO_DEPARTURES": "Inga avgångar ..."
 }

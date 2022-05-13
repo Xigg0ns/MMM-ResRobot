@@ -2,5 +2,6 @@
 	"NOW": "Now",
 	"MINUTES_SHORT": "min",
 	"FETCHING_DEPARTURES": "Fetching departures ...",
+	"NO_ROUTE": "Configure at least one route in config.js ...",
 	"NO_DEPARTURES": "No departures ..."
 }

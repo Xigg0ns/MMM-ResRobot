@@ -20,15 +20,16 @@ Module.register("MMM-ResRobot",{
 		apiKey: "<YOUR RESROBOT API KEY HERE>",
 		routes: [
 			{from: "740020749", to: ""},	// Each route has a starting station ID from ResRobot, default: Stockholm Central Station (Metro)
-		],					// and a destination station ID from ResRobot, default: none
-		skipMinutes: 0,		// Skip entries that depart with the next <value> minutes
-		timeWindow: 120,	// Time interval in minutes that will be returned from ResRobot, max 1439
-		maximumEntries: 6,	// Maximum number of departures to display
-		truncateAfter: 5,	// A value > 0 will truncate direction name at first space after <value> characters. 0 = no truncation
-		truncateLineAfter: 5,	// A value > 0 will truncate the line number after <value> characters. 0 = no truncation
-		showTrack: true,	// If true, track number will be displayed
-		getRelative: 0,		// Show relative rather than absolute time when less than <value> minutes left to departure, 0 = stay absolute
-		coloredIcons: false,	// Setting this to true will color departure icons according to colors in colorTable
+		],									// and a destination station ID from ResRobot, default: none
+		skipMinutes: 0,						// Skip entries that depart with the next <value> minutes
+		timeWindow: 120,					// Time interval in minutes that will be returned from ResRobot, max 1439
+		maximumEntries: 6,					// Maximum number of departures to display
+		truncateAfter: 5,					// A value > 0 will truncate direction name at first space after <value> characters. 0 = no truncation
+		truncateLineAfter: 5,				// A value > 0 will truncate the line number after <value> characters. 0 = no truncation
+		showTrack: true,					// If true, track number will be displayed
+		getRelative: 0,						// Show relative rather than absolute time when less than <value> minutes left to departure, 0 = stay absolute
+		coloredIcons: false,				// Setting this to true will color departure icons according to colors in colorTable
+		tableClass: "small",				// Table class to use
 		iconTable: {
 			"B": "fa fa-bus",
 			"S": "fa fa-subway",
@@ -66,15 +67,19 @@ Module.register("MMM-ResRobot",{
 	// Define start sequence.
 	start: function() {
 		Log.info("Starting module: " + this.name);
-
 		// Set locale.
 		moment.locale(this.config.language);
-
-		this.initConfig();
+	},
+	
+	notificationReceived: function(notification, payload, sender) {
+		if (notification === "ALL_MODULES_STARTED") {
+			this.initConfig();
+		}
 	},
 
 	socketNotificationReceived: function(notification, payload) {
-		Log.log(this.name + " received a socket notification: " + notification + " - Payload: " + payload);
+		//Log.info(this.name + " received a socket notification: " + notification + " - Payload: " + payload);
+		Log.info(this.name + " received a socket notification: " + notification);
 		if (notification === "DEPARTURES") {
 			this.departures = payload;
 			this.loaded = true;
@@ -94,7 +99,7 @@ Module.register("MMM-ResRobot",{
 		var wrapper = document.createElement("div");
 
 		if (this.config.routes === "") {
-			wrapper.innerHTML = "Please set at least one route to watch name: " + this.name + ".";
+			wrapper.innerHTML = this.translate("NO_ROUTE");
 			wrapper.className = "dimmed light small";
 			return wrapper;
 		}
@@ -102,11 +107,15 @@ Module.register("MMM-ResRobot",{
 		if (!this.loaded) {
 			wrapper.innerHTML = this.translate("FETCHING_DEPARTURES");
 			wrapper.className = "dimmed light small";
+			
+			//Send a FORCE_UPDATE socket notification to try and get the socket connection to work
+			this.sendSocketNotification("FORCE_UPDATE");
+			this.scheduleUpdate(1000);
 			return wrapper;
 		}
 
 		var table = document.createElement("table");
-		table.className = "small";
+		table.className = this.config.tableClass;
 
 		var cutoff = moment().add(moment.duration(this.config.skipMinutes, "minutes"));
 		var n = 0;
@@ -180,9 +189,9 @@ Module.register("MMM-ResRobot",{
 
 		}
 		if (n === 0) {
-			// No departures found so resend config
-			//this.initConfig();
 			wrapper.innerHTML = this.translate("NO_DEPARTURES");
+			wrapper.className = "dimmed light small";
+			return wrapper;
 		}
 		return table;
 	},
@@ -192,12 +201,11 @@ Module.register("MMM-ResRobot",{
 	 * argument delay number - Milliseconds before next update. If empty, 30 seconds is used.
 	 */
 	scheduleUpdate: function(delay) {
+		var self = this;
 		var nextLoad = 30000;
-		if (typeof delay !== "undefined" && delay >= 0) {
+		if (typeof delay !== "undefined" && delay > 0) {
 			nextLoad = delay;
 		}
-
-		var self = this;
 		clearTimeout(this.updateTimer);
 		this.updateTimer = setInterval(function() {
 			self.updateDom();
