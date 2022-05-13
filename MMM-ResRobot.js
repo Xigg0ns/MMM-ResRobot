@@ -83,7 +83,7 @@ Module.register("MMM-ResRobot",{
 		if (notification === "DEPARTURES") {
 			this.departures = payload;
 			this.loaded = true;
-			this.scheduleUpdate(0);
+			this.scheduleUpdate(1);
 		}
 	},
 
